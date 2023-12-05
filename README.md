@@ -17,7 +17,7 @@ If you want to train the network on you own midi data, make sure that they only 
 
 ## Generating patterns
 
-Once you have trained the network you can generate text using **predict.py**
+Once you have trained the network you can generate patterns using **pattern_generator.py**
 
 You can run the prediction file with thepretrained model by using the **weights.h5** file
 
