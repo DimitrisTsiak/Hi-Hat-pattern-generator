@@ -5,13 +5,14 @@ import tensorflow.keras as keras
 import numpy as np
 MIDI_DATASET_PATH = "hi_hat_midis"
 #TRIPLETS = 0.333333333
-ACCEPTABLE_DURATIONS = [0.0625, 0.125, 0.25, 0.5, 0.75, 1.0, 1.5, 2, 3, 4]
+ACCEPTABLE_DURATIONS = [0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.875, 0.9375
+                        , 1.0625, 1.125, 1.1875, 1.25, 1.3125, 1.375, 1.4375, 1.5, 1.5625, 1.625, 1.6875, 1.75, 1.875, 1.9375,
+                          2, 3, 4]
 SINGLE_FILE_DATASET = "file_dataset"
 SEQUENCE_LENGTH = 64
 SAVE_DIR = "dataset/"
 MAPPING_PATH = "mapping.json"
-#kern, MIDI,MusicXML -> m2 -> kern,MIDI,...
-#it not just from changin the format of data, it has a lot of tools such as keyrecognition
+
 def load_songs_in_midi(dataset_path):
     songs = []
     #go through all the files in the dataset and load them with music21
@@ -20,7 +21,7 @@ def load_songs_in_midi(dataset_path):
             if file[-3:] == "mid":
                 #song is a string in the music21 representation
                 song = m21.converter.parse(os.path.join(path, file),quantizePost=False)
-                song.show()
+                #song.show()
                 songs.append(song)
     return songs
 
@@ -30,28 +31,6 @@ def has_acceptable_durations(song, acceptable_durations):
             return False
     return True
     
-# def transpose(song):
-#     #get key from the song 
-#     parts = song.getElementsByClass(m21.stream.Part)
-#     measure_part0 = parts[0].getElementsByClass(m21.stream.Measure)
-#     key = measure_part0[0][4]
-
-
-#     #estimate key using music21
-#     if not isinstance(key, m21.key.Key):
-#         key = song.analyze("key")
-    
-#     #print(key)
-
-#     #transpose song by calculated interval
-#     if key.mode == "major":
-#         interval = m21.interval.Interval(key.tonic, m21.pitch.Pitch("C"))
-#     elif key.mode == "minor":
-#         interval = m21.interval.Interval(key.tonic, m21.pitch.Pitch("A"))
-#     transposed_song = song.transpose(interval)
-
-#     return transposed_song
-
 
 def encode_song(song, time_step = 0.0625): 
     # it will encode it to the time series representation
@@ -60,16 +39,22 @@ def encode_song(song, time_step = 0.0625):
     for event in song.flat.notesAndRests:
         symbol = None
         # handle notes
-        print(event)
+        #print(event)
         if isinstance(event, m21.note.Note):
             symbol = event.pitch.midi #60
     
         elif isinstance(event, m21.note.Rest):
             symbol = "r"
+        
         #elif isinstance(event, m21.chord.Chord):
-        #    symbol = event.pitches
-        #why do we use both "r" and "_" , isn't it hte same? No its not _ represents for how many timesteps the note is held
-        #convert the note/rest into time series notation
+            # we have dealt with chords in the dataset 
+            #lowest_note = min(element.pitches, key=lambda x: x.ps)
+            #mono_part.append(note.Note(lowest_note, duration=element.duration))
+            #active_notes.add(element.offset)
+            
+
+            #notes.append('.'.join(str(n) for n in unit.normalOrder))
+       
         steps = int(event.duration.quarterLength / time_step)
         # i am not sure i understand this 
         for step in range(steps):
@@ -91,8 +76,7 @@ def preprocess(dataset_path):
     k = 0
     l = 0
 
-    #filter out songs that have not acceptable durations
-    #triplets etc..
+    
     for i, song in enumerate(songs):
         #filter out songs that have not acceptable durations
         #triplets etc..
@@ -101,18 +85,13 @@ def preprocess(dataset_path):
             continue
         l += 1
 
-        #transpoce songs to cmajor or a minor
-        #song = transpose(song)
-
-        #whst hsppens   if not in scale?
-
         #encode songs with music time series representation
         encoded_song = encode_song(song)
         #save songs to text file
         save_path = os.path.join(SAVE_DIR, str(i))
         with open(save_path, "w") as fp:
             fp.write(encoded_song)
-    print(f"dataset had {l} acceptable midis and {k} non accepted")
+    print(f"dataset had {l} acceptable midis and {k} not acceptable")
 
 def load(file_path):
     with open(file_path, "r") as fp:
